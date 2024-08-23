@@ -42,6 +42,8 @@ class queryRequest(BaseModel):
 class createQuizRequest(BaseModel):
     user_id: int
     topic: str
+    isAdvanced: bool
+    total_questions: int
 
 
 
@@ -61,6 +63,7 @@ class updateQuizRequest(BaseModel):
 class createSuggestionRequest(BaseModel):
     user_id:int
     topic:str
+    type:str #blog, youtube, code
 
 
 class updateSuggestionRequest(BaseModel):
@@ -73,6 +76,7 @@ class updateSuggestionRequest(BaseModel):
 class createLectureRequest(BaseModel):
     user_id:int
     topic:str
+    isAdvanced:bool
 
 
 class checkAnswerRequest(BaseModel):
