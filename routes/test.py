@@ -280,6 +280,7 @@ def generate_suggestions_prompt(topic: str,type: str) -> str:
             f"- Topic: {topic}\n\n"
             "Each suggestion should include the suggestion heading as placeholder text, a relevant link to that suggested article or blog , and the platform as source. "
             "Suggestions should be related to topic. If you provide irrelevant, repetitive, or low-quality suggestions, you will be penalized 500 dollars.\n"
+            "if you provide a broken link, you will be penalized 1500 dollars.\n"
             "Provide the suggestions in the following JSON format:\n"
             "{\n"
             '  "suggestions": [\n'
