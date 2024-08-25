@@ -154,11 +154,12 @@ async def code(query: queryRequest,db:db_dependency,background_tasks: Background
 #for quiz------------------------------------------------------------------------------------------------------
 
 
-def generate_quiz_prompt(topic: str) -> str:
+def generate_quiz_prompt(topic: str, isAdvanced: bool, total_questions: int) -> str:
     return (
         "Generate a quiz with the following details:\n"
-        f"- Number of questions: {10}\n"
+        f"- Number of questions: {total_questions}\n"
         f"- Quiz Topic: {topic}\n\n"
+        F"- Quiz Difficulty: {'Advanced' if isAdvanced else 'Beginner'}\n\n"
         "Each question should have 4 options with one or multiple correct answers. If there is multiple correct answer, set multiple_choice to true.\n"
         "Questions should be unique, concise, aligned with the topic, and challenging. If you give repetitive, obvious and easy questions, you will be penalized 500 dollars.\n"
         "Provide the questions and options in the following JSON format:\n"
@@ -213,10 +214,17 @@ async def build_quiz(request: createQuizRequest, db: db_dependency):
         raise HTTPException(status_code=404, detail="User not found")
     
 
-    prompt=generate_quiz_prompt(request.topic)
+    prompt=generate_quiz_prompt(request.topic, request.isAdvanced, request.total_questions)
     response=generate_quiz_response(prompt)
     quiz_data=json.loads(response)
-    db_quiz=Quizes(topic=request.topic,score=0,state=2,owner_id=request.user_id, created_at=datetime.now(), updated_at=datetime.now())
+    db_quiz=Quizes(topic=request.topic,
+                    total_questions=request.total_questions,
+                    isAdvanced=request.isAdvanced,
+                    score=0,
+                    state=2,
+                    owner_id=request.user_id, 
+                    created_at=datetime.now(), 
+                    updated_at=datetime.now())
     db.add(db_quiz)
     db.commit()
     db.refresh(db_quiz)
@@ -241,29 +249,80 @@ async def build_quiz(request: createQuizRequest, db: db_dependency):
 #for suggestion------------------------------------------------------------------------------------------------
 
 
-def generate_suggestions_prompt(topic: str) -> str:
-    return (
-        "Generate a list of 5 suggestions from codeforces, leetcode, codechef or similar coding platforms for the following topic:\n"
-        f"- Topic: {topic}\n\n"
-        "Each suggestion should include the problem name as placeholder text, a relevant link to that suggestion on that coding platform, and the coding platform as source. "
-        "Suggestions should be related to topic. there should be variety of difficulty levels and types of problems. If you provide irrelevant, repetitive, or low-quality suggestions, you will be penalized 500 dollars.\n"
-        "Provide the suggestions in the following JSON format:\n"
-        "{\n"
-        '  "suggestions": [\n'
-        '    {\n'
-        '      "placeholder": "Suggestion 1",\n'
-        '      "link": "http://example.com/suggestion1",\n'
-        '      "source": "Source 1"\n'
-        '    },\n'
-        '    {\n'
-        '      "placeholder": "Suggestion 2",\n'
-        '      "link": "http://example.com/suggestion2",\n'
-        '      "source": "Source 2"\n'
-        '    },\n'
-        '    ...\n'
-        '  ]\n'
-        "}"
-    )
+def generate_suggestions_prompt(topic: str,type: str) -> str:
+    if type=="code":
+        return (
+            "Generate a list of 5 suggestions from codeforces, leetcode, codechef or similar coding platforms for the following topic:\n"
+            f"- Topic: {topic}\n\n"
+            "Each suggestion should include the problem name as placeholder text, a relevant link to that suggestion on that coding platform, and the coding platform as source. "
+            "Suggestions should be related to topic. there should be variety of difficulty levels and types of problems. If you provide irrelevant, repetitive, or low-quality suggestions, you will be penalized 500 dollars.\n"
+            "Provide the suggestions in the following JSON format:\n"
+            "{\n"
+            '  "suggestions": [\n'
+            '    {\n'
+            '      "placeholder": "Suggestion 1",\n'
+            '      "link": "http://example.com/suggestion1",\n'
+            '      "source": "Source 1"\n'
+            '    },\n'
+            '    {\n'
+            '      "placeholder": "Suggestion 2",\n'
+            '      "link": "http://example.com/suggestion2",\n'
+            '      "source": "Source 2"\n'
+            '    },\n'
+            '    ...\n'
+            '  ]\n'
+            "}"
+        )
+    
+    elif type=="blog":
+        return (
+            "Generate a list of 5 suggestions of articles,blog,or similar content accross internet.:\n"
+            f"- Topic: {topic}\n\n"
+            "Each suggestion should include the suggestion heading as placeholder text, a relevant link to that suggested article or blog , and the platform as source. "
+            "Suggestions should be related to topic. If you provide irrelevant, repetitive, or low-quality suggestions, you will be penalized 500 dollars.\n"
+            "if you provide a broken link, you will be penalized 1500 dollars.\n"
+            "Provide the suggestions in the following JSON format:\n"
+            "{\n"
+            '  "suggestions": [\n'
+            '    {\n'
+            '      "placeholder": "Suggestion 1",\n'
+            '      "link": "http://example.com/suggestion1",\n'
+            '      "source": "Source 1"\n'
+            '    },\n'
+            '    {\n'
+            '      "placeholder": "Suggestion 2",\n'
+            '      "link": "http://example.com/suggestion2",\n'
+            '      "source": "Source 2"\n'
+            '    },\n'
+            '    ...\n'
+            '  ]\n'
+            "}"
+        )
+    
+    elif type=="youtube":
+        return (
+            "Generate a list of 5 suggestions of youtube videos on the following topic.:\n"
+            f"- Topic: {topic}\n\n"
+            "Each suggestion should include the  video title as placeholder text, a relevant link to that youtube video , and youtube as source text. "
+            "Suggestions should be related to topic. If you provide irrelevant, repetitive, or low-quality suggestions, you will be penalized 500 dollars.\n"
+            "Provide the suggestions in the following JSON format:\n"
+            "{\n"
+            '  "suggestions": [\n'
+            '    {\n'
+            '      "placeholder": "Suggestion 1",\n'
+            '      "link": "http://example.com/suggestion1",\n'
+            '      "source": "Youtube"\n'
+            '    },\n'
+            '    {\n'
+            '      "placeholder": "Suggestion 2",\n'
+            '      "link": "http://example.com/suggestion2",\n'
+            '      "source": "Youtube"\n'
+            '    },\n'
+            '    ...\n'
+            '  ]\n'
+            "}"
+        )
+
 
 
 def generate_suggestion_response(prompt:str):
@@ -287,7 +346,7 @@ async def build_suggestion(request: createSuggestionRequest, db: db_dependency):
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     
-    prompt=generate_suggestions_prompt(request.topic)
+    prompt=generate_suggestions_prompt(request.topic, request.type)
     response=generate_suggestion_response(prompt)
     suggestion_data=json.loads(response)
     suggestions=[]
@@ -317,18 +376,26 @@ async def build_suggestion(request: createSuggestionRequest, db: db_dependency):
 #for lecture------------------------------------------------------------------------------------------------
 
 
-def generate_lecture_prompt(topic: str) -> str:
+def generate_lecture_prompt(topic: str,isAdvanced: bool) -> str:
+    learner=""
+    if isAdvanced:
+        learner="the lecture is for advanced learners. Assume that the learner has a good understanding of the topic and is looking for more in-depth knowledge."
+    else:
+        learner="the lecture is for beginners. Assume that the learner is new to the topic and is looking for a basic understanding of the topic."
+
     return (
         "Generate a lecture on the following topic:\n"
         f"- Topic: {topic}\n\n"
-        "The lecture should contain 10 to 15 questions. Each question should be relevant to the topic. "
+        f"Assume that {learner}\n\n"
+        "The lecture should contain 10 questions. Each question should be relevant to the topic. "
         "Make sure that the questions are unique, concise, and challenging. If you provide repetitive, obvious, and easy questions, you will be penalized 500 dollars.\n"
         "If the topic is very specific, the questions should be specific within the boundary of the topic. If the topic is broad, the questions should be diverse.\n"
-        "questions should be such that can be answered in small sentences. If the questions are too long or broad, the user will not be able to answer them.\n"
+        "questions should be such that can be answered in small sentences.\n"
         "Provide the lecture and questions in the following JSON format:\n"
         "{\n"
         '  "lecture": {\n'
-        f'    "topic": "{topic}",\n'
+        f'   "topic": "{topic}",\n'
+        f'   "isAdvanced": {isAdvanced},\n'
         '    "questions": [\n'
         '      {\n'
         '        "text": "Question 1"\n'
@@ -364,20 +431,21 @@ async def build_lecture(request: createLectureRequest, db: db_dependency):
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     
-    prompt=generate_lecture_prompt(request.topic)
+    prompt=generate_lecture_prompt(request.topic,request.isAdvanced)
     response=generate_lecture_response(prompt)
     lecture_data=json.loads(response)
 
     lecture_info = lecture_data['lecture']
     topic = lecture_info['topic']
+    isAdvanced = lecture_info['isAdvanced']
     questions = lecture_info['questions']
 
     #at first, create the teacher convo
 
     teacher_convo=Conversations(name="lecture",
                                 description="",
-                                isFree=True,
-                                isAdvanced=True,
+                                isFree=False,
+                                isAdvanced=isAdvanced,
                                 isTeacher=True,
                                 user_id=request.user_id,
                                 created_at=datetime.now(),
@@ -389,6 +457,7 @@ async def build_lecture(request: createLectureRequest, db: db_dependency):
     #then, create the lecture
 
     db_lec=Lectures(topic=request.topic,
+                    isAdvanced=request.isAdvanced,
                     isStarred=False,
                     total_questions=len(questions),
                     current_question=1,

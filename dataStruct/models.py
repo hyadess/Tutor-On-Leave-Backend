@@ -53,6 +53,8 @@ class Quizes(Base):
     id = Column(Integer, primary_key=True, index=True)
     topic = Column(String)
     score=Column(Integer)
+    total_questions = Column(Integer)
+    isAdvanced = Column(Boolean)
     state =Column(Integer)   # 1= attempted, 2= unattempted, 3= attempted and highlighted, 4= unattempted and highlighted
     owner_id = Column(Integer, ForeignKey('users.id'))
     created_at = Column(DateTime)
@@ -101,6 +103,7 @@ class Lectures(Base):
     id = Column(Integer, primary_key=True, index=True)
     topic = Column(String)
     isStarred = Column(Boolean)
+    isAdvanced = Column(Boolean)
     total_questions = Column(Integer)
     current_question = Column(Integer)
     teacher_convo_id = Column(Integer, ForeignKey('conversations.id'))
