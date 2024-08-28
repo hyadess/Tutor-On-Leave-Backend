@@ -7,7 +7,7 @@ from database import SessionLocal, engine
 from sqlalchemy.orm import Session
 from database import db_dependency
 from chroma_db import Chroma, data, embedding_model
-from routes import conversation, auth,quiz,suggestion,lecture,test
+from routes import conversation,profile, auth,quiz,suggestion,lecture,test
 
 app = FastAPI()
 origins = ["http://localhost:3000"]
@@ -31,6 +31,8 @@ app.include_router(test.router)
 app.include_router(quiz.router)
 app.include_router(suggestion.router)
 app.include_router(lecture.router)
+app.include_router(profile.router)
+
 
 if __name__ == "__main__":
     import uvicorn

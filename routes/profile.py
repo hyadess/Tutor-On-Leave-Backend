@@ -59,10 +59,21 @@ async def get_profile(user_id:int , db:db_dependency):
     if db_convo is None:
         raise HTTPException(status_code=404, detail="Convo not found")
     convo_counts = defaultdict(int)
+    isFree = 0
+    isAdvance = 0
     for convo in db_convo:
         date_only = convo.created_at.date().isoformat() 
+        if convo.isFree:
+            isFree = isFree+1
+        else:
+            isAdvance = isAdvance+1
         convo_counts[date_only] += 1
-    convo_result = [{"date": date, "count": count} for date, count in convo_counts.items()]
+    convo_Count= [{"date": date, "count": count } for date, count in convo_counts.items()]
+    convo_result = {
+        "isFree" : isFree,
+        "isAdvance":isAdvance,
+        "count" : convo_Count
+    }
 
     #Lecture count per day
     db_lecture = db.query(models.Lectures).filter(models.Lectures.owner_id == user_id).all()
