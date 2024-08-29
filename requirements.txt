@@ -37,3 +37,4 @@ pluggy
 py
 toml
 gotrue<3.0
+google-generativeai
