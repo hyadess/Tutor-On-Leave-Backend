@@ -1,3 +1,11 @@
+
+from fastapi import FastAPI, HTTPException, Depends
+
+
+from typing import List, Annotated
+from database import  engine
+
+
 from datetime import datetime, timedelta
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
@@ -30,7 +38,11 @@ async def create_user(user: SignupRequest, db: db_dependency):
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    return db_user
+    print(db_user.id)
+    access_token_expires = timedelta(minutes=30)
+    access_token = create_access_token(db_user.username, db_user.id, access_token_expires)
+    return {"access_token": access_token, "token_type": "bearer", "user_id": db_user.id}
+    # return db_user
 
 
 @router.post("/login", response_model=TokenResponse)
