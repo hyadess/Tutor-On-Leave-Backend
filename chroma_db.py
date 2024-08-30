@@ -6,11 +6,10 @@ from langchain_core.documents import Document
 import os
 from dotenv import load_dotenv
 import pandas as pd
-load_dotenv()
+load_dotenv
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY= os.environ.get("OPENAI_API_KEY")
+
 
 # Read data from CSV
 csv_file_path = 'gifs.csv'

@@ -1,11 +1,13 @@
 from datetime import datetime, timedelta
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-
+import requests
+import re
 import openai
 from sumy.parsers.plaintext import PlaintextParser
 from sumy.nlp.tokenizers import Tokenizer
 from sumy.summarizers.lsa import LsaSummarizer
+import google.generativeai as genai
 
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -248,10 +250,54 @@ async def build_quiz(request: createQuizRequest, db: db_dependency):
 
 #for suggestion------------------------------------------------------------------------------------------------
 
+# -------------------------------------------------
+
+def check_link(url):
+    try:
+        response = requests.head(url, allow_redirects=True, timeout=5)
+        print(url)
+        if response.status_code == 200:
+            print("link found")
+            return True
+        else:
+            return False
+    except requests.exceptions.RequestException as e:
+        print(f"Error checking URL {url}: {e}")
+        return False
+
+# -------------------------------------------------
+
+# idea is from https://gist.github.com/tonY1883/a3b85925081688de569b779b4657439b
+
+
+def extract_video_id(url):
+    # Regex pattern to match and capture the video ID directly
+    pattern = re.compile(r'(?:v=|\/)([0-9A-Za-z_-]{11})')
+    match = pattern.search(url)
+    return match.group(1) if match else None
+
+
+def check_youtube_video(url):
+    try:
+        video_id = extract_video_id(url)
+        if not video_id:
+            return False
+        src="http://img.youtube.com/vi/" + video_id + "/mqdefault.jpg"
+        response = requests.get(src, timeout=10)
+        if response.status_code == 200:
+            print("youtube video found")
+            return True
+        else:
+            return False
+    except requests.exceptions.RequestException as e:
+        print(f"Error checking URL {url}: {e}")
+        return False
+
 
 def generate_suggestions_prompt(topic: str,type: str) -> str:
     if type=="code":
         return (
+            "search through internet for the suggestions."
             "Generate a list of 5 suggestions from codeforces, leetcode, codechef or similar coding platforms for the following topic:\n"
             f"- Topic: {topic}\n\n"
             "Each suggestion should include the problem name as placeholder text, a relevant link to that suggestion on that coding platform, and the coding platform as source. "
@@ -276,6 +322,7 @@ def generate_suggestions_prompt(topic: str,type: str) -> str:
     
     elif type=="blog":
         return (
+            "search through internet for the suggestions."
             "Generate a list of 5 suggestions of articles,blog,or similar content accross internet.:\n"
             f"- Topic: {topic}\n\n"
             "Each suggestion should include the suggestion heading as placeholder text, a relevant link to that suggested article or blog , and the platform as source. "
@@ -338,6 +385,22 @@ def generate_suggestion_response(prompt:str):
     reply = chat_completion.choices[0].message.content
     # print(reply)
     return reply
+    # genai.configure(api_key=GEMINI_API_KEY)
+    # # Create a model instance
+    # model = genai.GenerativeModel("models/gemini-1.5-flash",
+    #                                 generation_config={
+    #                                     "response_mime_type": "application/json",
+    #                                     "temperature": 0.1,
+    #                                 })
+
+    # # Define system prompt and user prompt
+    # system_prompt = "search through internet for the user query and provide the suggestions"
+    # user_prompt = prompt
+
+    # # Generate content with system prompt and temperature
+    # response = model.generate_content(user_prompt)
+    # print(response.text)
+    # return response.text
 
 
 @router.post("/suggestion", status_code=status.HTTP_200_OK)
@@ -351,6 +414,10 @@ async def build_suggestion(request: createSuggestionRequest, db: db_dependency):
     suggestion_data=json.loads(response)
     suggestions=[]
     for suggestion in suggestion_data["suggestions"]:
+        if not check_link(suggestion['link']):
+            continue
+        if request.type=="youtube" and not check_youtube_video(suggestion['link']):
+            continue
         db_suggestion=Suggestions(placeholder=suggestion['placeholder'],
                                    link=suggestion['link'],
                                    source=suggestion['source'],
