@@ -29,7 +29,6 @@ load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-GEMINI_API_KEY= os.getenv("GEMINI_API_KEY")
 
 router = APIRouter(prefix="/test", tags=["test"])
 
@@ -415,10 +414,10 @@ async def build_suggestion(request: createSuggestionRequest, db: db_dependency):
     suggestion_data=json.loads(response)
     suggestions=[]
     for suggestion in suggestion_data["suggestions"]:
-        # if not check_link(suggestion['link']):
-        #     continue
-        # if request.type=="youtube" and not check_youtube_video(suggestion['link']):
-        #     continue
+        if not check_link(suggestion['link']):
+            continue
+        if request.type=="youtube" and not check_youtube_video(suggestion['link']):
+            continue
         db_suggestion=Suggestions(placeholder=suggestion['placeholder'],
                                    link=suggestion['link'],
                                    source=suggestion['source'],
