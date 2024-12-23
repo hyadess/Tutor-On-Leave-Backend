@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 import requests
 import re
-import openai
+from openai import OpenAI
 from sumy.parsers.plaintext import PlaintextParser
 from sumy.nlp.tokenizers import Tokenizer
 from sumy.summarizers.lsa import LsaSummarizer
@@ -29,6 +29,9 @@ load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+client = OpenAI()
+client.api_key = OPENAI_API_KEY
 
 router = APIRouter(prefix="/test", tags=["test"])
 
@@ -71,7 +74,6 @@ def databaseAdding(conversation_id:int,userQuery:str,messages:list[Message],db:d
 #then, summerize the conversation.....................................................
 
 
-
 def summerize_conversation(conversation_id:int, messages:list[str],db:db_dependency):
     # text = " ".join(messages)
     # parser = PlaintextParser.from_string(text, Tokenizer("english"))
@@ -99,8 +101,6 @@ def summerize_conversation(conversation_id:int, messages:list[str],db:db_depende
     print("conversation summerized")
 
 
-
-
 def read_conversation(conversation_id:int,db:db_dependency):
     #want all the text messages form both user and system as a simple array
     conversation=db.query(Conversations).filter(Conversations.id==conversation_id).first()
@@ -122,14 +122,13 @@ def read_conversation(conversation_id:int,db:db_dependency):
 
 
 def generate_openai_response(prompt: str, question: str,conversation_id:int,db:db_dependency):
-    openai.api_key = OPENAI_API_KEY
     db_convo=db.query(Conversations).filter(Conversations.id==conversation_id).first()
     messages = [
         {"role": "system", "content": "the following lines contains last couple previous conversations:\n"+db_convo.description+"\n\n"+"now,"+prompt},
         {"role": "user", "content": question},
     ]
     
-    chat_completion = openai.ChatCompletion.create(
+    chat_completion = client.chat.completions.create(
         messages=messages,
         model="gpt-3.5-turbo",
     )
@@ -195,12 +194,12 @@ def generate_quiz_prompt(topic: str, isAdvanced: bool, total_questions: int) -> 
 
 
 def generate_quiz_response(prompt:str):
-    openai.api_key = OPENAI_API_KEY
+
     messages = [
         {"role": "user", "content": prompt},
     ]
     
-    chat_completion = openai.ChatCompletion.create(
+    chat_completion = client.chat.completions.create(
         messages=messages,
         model="gpt-3.5-turbo",
     )
@@ -373,12 +372,12 @@ def generate_suggestions_prompt(topic: str,type: str) -> str:
 
 
 def generate_suggestion_response(prompt:str):
-    openai.api_key = OPENAI_API_KEY
+
     messages = [
         {"role": "user", "content": prompt},
     ]
     
-    chat_completion = openai.ChatCompletion.create(
+    chat_completion = client.chat.completions.create(
         messages=messages,
         model="gpt-3.5-turbo",
     )
@@ -478,12 +477,12 @@ def generate_lecture_prompt(topic: str,isAdvanced: bool) -> str:
 
 
 def generate_lecture_response(prompt:str):
-    openai.api_key = OPENAI_API_KEY
+
     messages = [
         {"role": "user", "content": prompt},
     ]
     
-    chat_completion = openai.ChatCompletion.create(
+    chat_completion = client.chat.completions.create(
         messages=messages,
         model="gpt-3.5-turbo",
     )
@@ -569,12 +568,12 @@ def generate_answer_check_prompt(question: str, answer: str) -> str:
 
 
 def check_answer_response(prompt:str):
-    openai.api_key = OPENAI_API_KEY
+
     messages = [
         {"role": "user", "content": prompt},
     ]
     
-    chat_completion = openai.ChatCompletion.create(
+    chat_completion = client.chat.completions.create(
         messages=messages,
         model="gpt-3.5-turbo",
     )
